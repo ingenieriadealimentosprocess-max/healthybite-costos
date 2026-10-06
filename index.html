@@ -149,26 +149,105 @@ function applyBoletin(st,force){
   });
   st.cfg.boletin=BOL_FECHA;return n;
 }
-// Hoja real del 24/09/2026 (Anggi). Ensalada: cantidades por confirmar contra la hoja original.
-const SEED_DIA=[['2026-09-24',
- {entrada:['Sopa de col morada y pera',9810,275,2830],proteina:['Pollo apanado',5855,120,1430],acomp:['Plátano con queso cuajada',3700,80,160],ensalada:['Ensalada',0,200,0]},
- {entrada:[['Cilantro (hojas)',15,'g'],['Col morada',2330,'g'],['Pera',1470,'g'],['Cebolla blanca',930,'g'],['Ajo',15,'g'],['Manzana verde',560,'g']],
+// Precios de compra en Carulla (carulla.com, consultados el 05/10/2026) para los insumos que no tenían precio. [insumo, producto en Carulla, precio, cantidad, unidad]
+const CARULLA_FECHA='2026-10-05';
+const CARULLA=[
+['Costilla (cruda)','Costilla de cerdo fresca $25.980/kg',25980,1,'kg'],
+['Maíz (desgranado)','Maíz tierno 250 g $9.160',36640,1,'kg'],
+['Papa criolla y parda','Promedio papa criolla granel $12.380/kg y pastusa granel $7.180/kg (50/50)',9780,1,'kg'],
+['Queso loncha','Queso mozzarella TAEQ tajado 417 g $22.600',54196,1,'kg'],
+['Hojuelas de maíz sin gluten','Corn flakes Kellogg’s 700 g $27.000 (no es sin gluten)',38571,1,'kg'],
+['Col morada','Repollo morado $11.380/und, se asumió 1,5 kg por unidad',7587,1,'kg'],
+['Pera','Pera asiática $22.781/kg',22781,1,'kg'],
+['Apio','Apio $3.680/kg',3680,1,'kg'],
+['Cilantro (hojas)','Cilantro 100 g $2.400',24000,1,'kg'],
+['Jugo de limón','Jugo de limón Berna 650 ml $8.100',12462,1,'l'],
+['Jugo de naranja','Jugo de naranja Colanta natural 1 l $9.200',9200,1,'l'],
+['Salsa de soya','Salsa soya Sakura 1 l $22.640 (1 ml = 1 g)',22640,1,'kg'],
+['Mostaza','Mostaza Heinz 350 g $16.800',48000,1,'kg'],
+['Vinagre','Vinagre blanco Frescampo 1 l $2.850',2850,1,'l'],
+['Maicena','Fécula Maizena 720 g $19.125',26563,1,'kg'],
+['Maní','Maní natural Insualimentos 150 g $6.230',41533,1,'kg'],
+['Cúrcuma','Cúrcuma 150 g $9.740',64933,1,'kg'],
+['Mix de arveja y zanahoria (congelado)','Vegetales mixtos congelados Frescampo 500 g $9.000',18000,1,'kg'],
+['Cebolla puerro','Cebolla puerro orgánica TAEQ 500 g $14.740',29480,1,'kg'],
+['Ajo (unidades)','Ajo nacional $4.000/und',4000,1,'und']
+];
+function applyCarulla(st){
+  let n=0;
+  CARULLA.forEach(b=>{
+    const i=st.ins.find(x=>nz(x.n)===nz(b[0]));
+    if(!i||i.manual||i.precio>0)return;
+    i.precio=b[2];i.cant=b[3];i.u=b[4];i.nota='Carulla 05/10/2026 · '+b[1];n++;
+  });
+  st.cfg.carulla=CARULLA_FECHA;return n;
+}
+// Hojas de cocina del almuerzo del día (Anggi). info: [qué se preparó, total g/ml, porción, porciones que salieron, sobrante, destino del sobrante]; uso: [insumo, cantidad, unidad]
+const DATA_V=3;
+const PRE_INS={'Leche entera':[4918,1,'l'],'Stevia (gotas)':[35,1,'und']};
+const SEED_DIA=[
+{f:'2026-09-24',mesa:19,dom:12,pers:4,cort:0,emp:'',
+ nota:'Jueves 24/09. La hoja no trae las porciones que salieron ni la cantidad de hojas verdes de la ensalada; el dip salió ya licuado (1465 ml) sin receta anotada.',
+ compras:[['Pollo',9.95,'kg',226362,'MacPollo','Sí']],
+ info:{entrada:['Sopa de col lombarda',9810,275,0,2830,'Se botó'],proteina:['Pollo apanado',5855,120,0,1430,'Se rotuló y a nevera'],acomp:['Plátano con queso cuajada',3700,80,0,160,'Se porcionó (mise en place)'],ensalada:['Ensalada',0,200,0,0,'']},
+ uso:{entrada:[['Cilantro (hojas)',15,'g'],['Col morada',2330,'g'],['Pera',1470,'g'],['Cebolla blanca',930,'g'],['Ajo',15,'g'],['Manzana verde',560,'g']],
   proteina:[['Pechuga de pollo',5855,'g'],['Hojuelas de maíz sin gluten',900,'g'],['Huevos',11,'und'],['Queso parmesano',200,'g']],
-  acomp:[['Plátano maduro',5285,'g'],['Queso cuajada',1000,'g']],
-  ensalada:[['Mix de lechugas orgánicas',1325,'g'],['Piña',1065,'g'],['Zanahoria',270,'g'],['Brócoli',340,'g'],['Tomates secos',0,'g'],['Dip de ensalada (preparado)',1465,'ml']]}]];
+  acomp:[['Plátano maduro',5285,'g'],['Aceite vegetal',60,'ml'],['Queso cuajada',1000,'g']],
+  ensalada:[['Mix de lechugas orgánicas',0,'g'],['Piña',1325,'g'],['Zanahoria',1065,'g'],['Brócoli',270,'g'],['Tomates secos',340,'g'],['Dip de ensalada (receta sin anotar)',1465,'ml']]}},
+{f:'2026-09-25',mesa:22,dom:4,pers:4,cort:0,emp:'4 J1 y 4 sopa + 4 bolsas de papel',
+ nota:'Viernes 25/09. La proteína también incluyó pollo apanado de ayer (sobrante del 24/09, ya costeado) y pollo en filete, ambos sin cantidades. En la salsa BBQ la miel se lee 326 g (revisar) y se usó agua 1100 ml (sin costo). Ensalada: cantidades en peso bruto; por plato 25 g lechuga, 40 g zucchini, 15 g apio, 15 g dátiles, 40 g manzana.',
+ compras:[],
+ info:{entrada:['Crema de maíz',8625,235,30,1075,'Se guardó'],proteina:['Costilla',2635,195,12,0,''],acomp:['Papa',2767,80,30,80,'Se guardó'],ensalada:['Ensalada',5045,170,30,1420,'Se guardó'],extra:['Salsa BBQ',2830,30,30,855,'Se guardó (mise en place)']},
+ uso:{entrada:[['Maíz (desgranado)',3000,'g'],['Cebolla puerro',160,'g'],['Cebolla blanca',880,'g'],['Ajo (unidades)',4,'und'],['Cilantro (hojas)',20,'g']],
+  proteina:[['Costilla (cruda)',3815,'g']],
+  acomp:[['Papa criolla y parda',4840,'g']],
+  ensalada:[['Mix de lechugas orgánicas',1395,'g'],['Zucchini',2170,'g'],['Apio',865,'g'],['Dátiles',330,'g'],['Manzana verde',1300,'g'],['Yogurt griego',500,'g'],['Leche entera',150,'ml'],['Stevia (gotas)',6,'und']],
+  extra:[['Maicena',65,'g'],['Tomate',1315,'g'],['Vinagre',190,'ml'],['Mostaza',60,'g'],['Salsa de soya',240,'g'],['Miel',326,'g']]}},
+{f:'2026-09-26',mesa:6,dom:11,pers:4,cort:0,emp:'J1, bowl de sopa, servilleta y cubiertos',
+ nota:'Sábado 26/09. Salsa criolla: total 2850 ml, porción 60 ml, sobró 355 g. Vinagreta de cilantro: total 375 ml, sobró 125 ml (45 ml de miel registrados como 63 g). Agua del arroz (1730) y de la limonada (6000 ml) sin costo. La pechuga de la sopa (1580 g) venía en la sección de proteína de la hoja.',
+ compras:[],
+ info:{entrada:['Sopa de pollo',10545,275,21,2560,'Se usó como base para otra sopa'],proteina:['Contramuslos',5425,200,21,930,'Se guardó'],acomp:['Arroz amarillo',2880,80,21,1040,'Se porcionó (mise en place)'],ensalada:['Ensalada',3605,165,21,825,'Se guardó'],extra:['Limonada',6510,110,21,4200,'Se guardó']},
+ uso:{entrada:[['Cebolla blanca',880,'g'],['Cilantro (hojas)',30,'g'],['Ajo',20,'g'],['Pimentón',120,'g'],['Mix de arveja y zanahoria (congelado)',595,'g'],['Sal',90,'g'],['Pechuga de pollo',1580,'g']],
+  proteina:[['Contramuslo de pollo',9880,'g'],['Tomate',1885,'g'],['Cebolla blanca',780,'g'],['Pimentón',140,'g'],['Ajo',20,'g'],['Aceite vegetal',25,'ml']],
+  acomp:[['Arroz parbolizado',1390,'g'],['Aceite vegetal',25,'ml'],['Sal',25,'g'],['Cúrcuma',20,'g'],['Maní',130,'g']],
+  ensalada:[['Mix de lechugas orgánicas',1365,'g'],['Tomate cherry',1045,'g'],['Cebolla crispy',255,'g'],['Pepino',940,'g'],['Jugo de limón',300,'ml'],['Cilantro (hojas)',20,'g'],['Sal',5,'g'],['Aceite vegetal',10,'ml'],['Miel',63,'g']],
+  extra:[['Jugo de limón',500,'ml'],['Stevia (gotas)',30,'und']]}},
+{f:'2026-09-28',mesa:26,dom:5,pers:2,cort:0,emp:'J1, bowl de sopa, servilleta y cubiertos',
+ nota:'Lunes 28/09. El plato fue lasaña de plátano: plátano puré 6385 g, pollo 1855 g, zucchini 435 g, zanahoria 410 g, salsa de champiñones 2720 ml y queso loncha 880 g (porción de 300 a 400 g). El zucchini, la zanahoria y el queso de la lasaña venían solo en la nota al pie y se sumaron aparte. Dip de naranja: total 1770 ml, sobró 400 ml. La crema de leche (2800 ml) se costeó como 2800 g.',
+ compras:[],
+ info:{entrada:['Sopa de verduras',7315,275,33,0,'No sobró'],proteina:['Pollo desmechado',3405,0,0,720,'Se guardó'],acomp:['Plátano (puré, lasaña)',7665,0,0,0,''],ensalada:['Ensalada',6920,225,33,0,''],extra:['Salsa de champiñones',3960,0,0,0,'No sobró']},
+ uso:{entrada:[['Apio',400,'g'],['Cebolla blanca',930,'g'],['Zucchini',570,'g'],['Zanahoria',1000,'g'],['Pimentón',445,'g']],
+  proteina:[['Pechuga de pollo',6425,'g'],['Ajo',15,'g'],['Apio',115,'g'],['Cebolla blanca',280,'g'],['Pimentón',95,'g']],
+  acomp:[['Plátano maduro',10230,'g'],['Queso loncha',880,'g'],['Zucchini',435,'g'],['Zanahoria',410,'g']],
+  ensalada:[['Mix de lechugas orgánicas',725,'g'],['Zanahoria',1125,'g'],['Mango',1910,'g'],['Tomate cherry',1945,'g'],['Zucchini',1215,'g'],['Yogurt griego',1000,'g'],['Jugo de naranja',570,'ml'],['Miel',200,'g']],
+  extra:[['Champiñones',1160,'g'],['Crema de leche',2800,'g']]}}
+];
+function nz(s){return String(s).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim()}
+function insFor(st,n,u){
+  let i=st.ins.find(x=>nz(x.n)===nz(n));
+  if(!i){const p=PRE_INS[n];i={id:uid(),n:n,cat:'Sin clasificar',precio:p?p[0]:0,cant:p?p[1]:1,u:p?p[2]:(u==='und'?'und':(u==='ml'||u==='l')?'l':'kg'),merma:0,nota:''};st.ins.push(i)}
+  return i;
+}
+function mkDia(a,st){
+  const d={id:uid(),fecha:a.f,prep:0,vend:0,valera:0,pvp:0,nota:a.nota||'',mesa:a.mesa,dom:a.dom,pers:a.pers,cort:a.cort||0,emp:a.emp||'',
+    compras:a.compras.map(c=>({p:c[0],q:c[1],u:c[2],v:c[3],prov:c[4],fac:c[5]})),
+    sel:{entrada:[],proteina:[],acomp:[],ensalada:[],extra:[]},uso:{},info:{},seed:true};
+  Object.keys(a.info).forEach(s=>{const x=a.info[s];d.info[s]={n:x[0],total:x[1],porcion:x[2],sal:x[3],sobr:x[4],dest:x[5]}});
+  Object.keys(a.uso).forEach(s=>{d.uso[s]=a.uso[s].map(l=>({ins:insFor(st,l[0],l[2]).id,q:l[1],u:l[2]}))});
+  return d;
+}
+function applyFacturas(st){
+  const p=st.ins.find(x=>nz(x.n)==='pechuga de pollo');
+  if(p&&!p.manual){p.precio=22750;p.cant=1;p.u='kg';p.manual=true;p.nota='Factura MacPollo 24/09/2026: $226.362 por 9,95 kg'}
+}
 function seed(){
-  const o={v:2,cfg:{mo:21,desv:5,inc:8,fcObj:30,pvp:31000,pvpValera:27900},
+  const o={v:3,cfg:{mo:21,desv:5,inc:8,fcObj:30,pvp:31000,pvpValera:27900,dataV:DATA_V},
     ins:SEED_INS.map(a=>({id:uid(),n:a[0],cat:a[1],precio:a[2],cant:1,u:a[3],merma:0,nota:''})),
     comps:SEED_COMPS.map(a=>({id:uid(),tipo:a[0],n:a[1],rinde:0,items:[],nota:''})),
     dias:[]};
-  applyBoletin(o);
-  const ins=(n,u)=>{let i=o.ins.find(x=>x.n===n);if(!i){i={id:uid(),n:n,cat:'Sin clasificar',precio:0,cant:1,u:(u==='und'?'und':u==='ml'?'l':'kg'),merma:0,nota:''};o.ins.push(i)}return i};
-  SEED_DIA.forEach(a=>{
-    const d={id:uid(),fecha:a[0],prep:0,vend:0,pvp:0,nota:'Hoja de cocina del 24/09 (sin cierre de ventas)',sel:{},uso:{},info:{}};
-    Object.keys(a[1]).forEach(s=>{const x=a[1][s];d.info[s]={n:x[0],total:x[1],porcion:x[2],sobr:x[3]};d.sel[s]=[];
-      d.uso[s]=a[2][s].map(l=>({ins:ins(l[0],l[2]).id,q:l[1],u:l[2]}))});
-    o.dias.push(d);
-  });
+  applyBoletin(o);applyFacturas(o);
+  SEED_DIA.forEach(a=>o.dias.push(mkDia(a,o)));
+  applyCarulla(o);
   return o;
 }
 function load(){try{const r=localStorage.getItem(KEY);if(r){const o=JSON.parse(r);if(o&&o.ins)return o}}catch(e){}return seed()}
@@ -182,7 +261,7 @@ function save(){
 /* ---------- Nube compartida (Supabase) ---------- */
 const CLOUD={url:'https://anfnsmrctebmrzigxvto.supabase.co',anonKey:'sb_publishable_IpsY4SI-wuA1RRYzsy4-7A_OoxXo-uI',table:'healthybite_estado',rowId:1,editPassword:'healthybite2026'};
 function cloudOn(){return !!(CLOUD.url&&CLOUD.anonKey)}
-let EDITABLE=!cloudOn(),pushTimer=null;
+let EDITABLE=!cloudOn(),pushTimer=null,needsPush=false;
 const cloudH=()=>({apikey:CLOUD.anonKey,Authorization:'Bearer '+CLOUD.anonKey,'Content-Type':'application/json',Prefer:'return=minimal'});
 function setStatus(t){const e=document.getElementById('cloudStatus');if(e)e.textContent=t}
 async function cloudPull(){
@@ -215,7 +294,7 @@ async function toggleEdit(){
   if(EDITABLE){EDITABLE=false;refreshLockUI();render();return}
   const pw=prompt('Contraseña para editar:');if(pw===null)return;
   if(pw!==CLOUD.editPassword){alert('Contraseña incorrecta.');return}
-  await cloudPull();EDITABLE=true;refreshLockUI();render();
+  await cloudPull();EDITABLE=true;refreshLockUI();render();if(needsPush){needsPush=false;save()}
 }
 function refreshLockUI(){
   const btn=document.getElementById('editBtn'),ban=document.getElementById('lockBanner'),sv=document.getElementById('saveBtn');
@@ -284,7 +363,10 @@ function semaforo(fc){
   return{c:'bad',t:'Crítico'};
 }
 function dayCalc(d){
-  const P=d.prep>0?d.prep:(d.vend>0?d.vend:0),V=d.vend>0?d.vend:0;
+  const det=((d.mesa||0)+(d.dom||0)+(d.pers||0)+(d.cort||0))>0;
+  const VT=det?(d.mesa||0)+(d.dom||0):(d.vend>0?d.vend:0);
+  const V=det?VT+(d.pers||0)+(d.cort||0):VT;
+  const P=d.prep>0?d.prep:V;
   let ins=0,batch=0,warns=0,uso=0;const menu=[],usoSlot={};
   Object.keys(TIPOS).forEach(s=>{
     (d.sel[s]||[]).forEach(r=>{
@@ -302,24 +384,34 @@ function dayCalc(d){
   let sobr=(V>0&&teor>0&&batchF>teor*V)?batchF-teor*V:0;
   Object.keys(TIPOS).forEach(s=>{const i=(d.info||{})[s]||{};if(i.total>0&&i.sobr>0)sobr+=full(usoSlot[s]||0)*Math.min(1,i.sobr/i.total)});
   const pvp=d.pvp>0?d.pvp:S.cfg.pvp,neto=pvp>0?netoDe(pvp):0;
-  const val=V>0?Math.min(d.valera>0?d.valera:0,V):0,pvpV=S.cfg.pvpValera>0?S.cfg.pvpValera:0,netoV=pvpV>0?netoDe(pvpV):0;
-  const ventas=(V>0&&neto>0)?(V-val)*neto+val*(netoV||neto):0;
-  const netoP=(V>0&&neto>0)?ventas/V:neto;
-  const base=real!=null?real:(teor>0?teor:null);
-  const fcT=neto>0?teor/neto*100:0,fcR=(netoP>0&&real!=null)?real/netoP*100:0;
-  const nm=real!=null?netoP:neto;
-  const margen=(nm>0&&base!=null)?nm-base:0;
+  const val=VT>0?Math.min(d.valera>0?d.valera:0,VT):0,pvpV=S.cfg.pvpValera>0?S.cfg.pvpValera:0,netoV=pvpV>0?netoDe(pvpV):0;
+  const ventas=(VT>0&&neto>0)?(VT-val)*neto+val*(netoV||neto):0;
+  const netoP=(VT>0&&neto>0)?ventas/VT:neto;
+  const fcT=neto>0?teor/neto*100:0;
+  const fcR=(ventas>0&&real!=null)?batchF/ventas*100:0;
+  let margen=0,margenPct=0,hasBase=false;
+  if(ventas>0&&real!=null){margen=(ventas-batchF)/VT;margenPct=(ventas-batchF)/ventas*100;hasBase=true}
+  else if(neto>0&&teor>0){margen=neto-teor;margenPct=margen/neto*100;hasBase=true}
   const sug=teor>0&&S.cfg.fcObj>0?Math.ceil(teor/(S.cfg.fcObj/100)*(1+S.cfg.inc/100)/500)*500:0;
-  return{P,V,val,pvpV,netoV,netoP,ins,uso,usoSlot,teor,batchF,real,sobr,pvp,neto,fcT,fcR,margen,hasBase:base!=null,margenPct:(nm>0&&base!=null)?margen/nm*100:0,sug,warns,menu,
+  return{P,V,VT,pers:d.pers||0,cort:d.cort||0,val,pvpV,netoV,netoP,ins,uso,usoSlot,teor,batchF,real,sobr,pvp,neto,fcT,fcR,margen,hasBase,margenPct,sug,warns,menu,
     ventas,costoDia:batchF,utilDia:ventas-batchF};
 }
 function touchDay(d){snapDay(d);save()}
-function snapDay(d){const c=dayCalc(d);d.snap={menu:c.menu,P:c.P,V:c.V,val:c.val,pvp:c.pvp,neto:c.neto,netoP:c.netoP,ins:c.ins,teor:c.teor,real:c.real,fcT:c.fcT,fcR:c.fcR,margen:c.margen,ventas:c.ventas,costoDia:c.costoDia,utilDia:c.utilDia}}
+function vv(s){return s.VT!=null?s.VT:s.V}
+function snapDay(d){const c=dayCalc(d);d.snap={menu:c.menu,P:c.P,V:c.V,VT:c.VT,val:c.val,pvp:c.pvp,neto:c.neto,netoP:c.netoP,ins:c.ins,teor:c.teor,real:c.real,fcT:c.fcT,fcR:c.fcR,margen:c.margen,ventas:c.ventas,costoDia:c.costoDia,utilDia:c.utilDia}}
 function ensureDefaults(){
   S.cfg=S.cfg||{};
   if(S.cfg.pvpValera==null)S.cfg.pvpValera=27900;
   if(S.cfg.boletin!==BOL_FECHA)applyBoletin(S);
-  S.dias.forEach(d=>{if(!d.snap)snapDay(d)});
+  if(S.cfg.dataV!==DATA_V){
+    SEED_DIA.forEach(a=>{
+      const old=S.dias.find(x=>x.fecha===a.f),nd=mkDia(a,S);
+      if(old){nd.valera=old.valera||0;nd.pvp=old.pvp||0;nd.prep=old.prep||0;S.dias[S.dias.indexOf(old)]=nd}else S.dias.push(nd);
+    });
+    applyFacturas(S);S.cfg.dataV=DATA_V;needsPush=true;
+  }
+  if(S.cfg.carulla!==CARULLA_FECHA){applyCarulla(S);needsPush=true}
+  S.dias.forEach(d=>{if(!d.snap||d.snap.VT==null||S.cfg.carulla===CARULLA_FECHA&&!d.snap.cr){snapDay(d);d.snap.cr=1}});
 }
 
 /* ---------- Render principal ---------- */
@@ -357,11 +449,14 @@ function rDia(){
   h+=`<div class="card"><div class="row">
     <label class="f">Fecha<input type="date" value="${d.fecha}" onchange="setDay('fecha',this.value)"></label>
     <label class="f">Almuerzos preparados<input type="number" min="0" value="${d.prep||''}" onchange="setDay('prep',num(this.value))"></label>
-    <label class="f">Almuerzos vendidos (total)<input type="number" min="0" value="${d.vend||''}" onchange="setDay('vend',num(this.value))"></label>
-    <label class="f">De ellos, con valera (${money(S.cfg.pvpValera)})<input type="number" min="0" value="${d.valera||''}" placeholder="0" onchange="setDay('valera',num(this.value))"></label>
+    <label class="f">Mesa<input type="number" min="0" style="width:80px" value="${d.mesa||''}" onchange="setDay('mesa',num(this.value))"></label>
+    <label class="f">Domicilio<input type="number" min="0" style="width:90px" value="${d.dom||''}" onchange="setDay('dom',num(this.value))"></label>
+    <label class="f">Personal (sin cobro)<input type="number" min="0" style="width:90px" value="${d.pers||''}" onchange="setDay('pers',num(this.value))"></label>
+    <label class="f">Cortesías / botados<input type="number" min="0" style="width:90px" value="${d.cort||''}" onchange="setDay('cort',num(this.value))"></label>
+    <label class="f">De los vendidos, con valera (${money(S.cfg.pvpValera)})<input type="number" min="0" value="${d.valera||''}" placeholder="0" onchange="setDay('valera',num(this.value))"></label>
     <label class="f">Precio al público (con INC)<input type="number" min="0" step="100" style="width:140px" value="${d.pvp||''}" placeholder="${S.cfg.pvp||'ej. 28000'}" onchange="setDay('pvp',num(this.value))"></label>
     <label class="f" style="flex:1;min-width:160px">Nota<input value="${esc(d.nota||'')}" onchange="setDay('nota',this.value)" placeholder="opcional"></label>
-  </div></div>`;
+  </div><div class="mut" style="margin-top:8px">Vendidos (mesa + domicilio): <b>${c.VT}</b> · Total servidos, con personal y cortesías: <b>${c.V}</b></div></div>`;
   Object.keys(TIPOS).forEach(s=>{
     const rows=d.sel[s]||[];
     h+=`<div class="card slot"><h3>${TIPOS[s]} <span>(cada fila = 1 porción por almuerzo)</span></h3>`;
@@ -382,7 +477,9 @@ function rDia(){
       <div class="row" style="margin:8px 0"><label class="f" style="flex:1;min-width:150px">¿Qué se preparó?<input style="width:100%" value="${esc(info.n||'')}" onchange="setInfo('${s}','n',this.value)"></label>
       <label class="f">Total preparado (g/ml)<input type="number" min="0" style="width:100px" value="${info.total||''}" onchange="setInfo('${s}','total',num(this.value))"></label>
       <label class="f">Porción (g/ml)<input type="number" min="0" style="width:85px" value="${info.porcion||''}" onchange="setInfo('${s}','porcion',num(this.value))"></label>
-      <label class="f">Sobrante (g/ml)<input type="number" min="0" style="width:90px" value="${info.sobr||''}" onchange="setInfo('${s}','sobr',num(this.value))"></label></div>
+      <label class="f">Sobrante (g/ml)<input type="number" min="0" style="width:90px" value="${info.sobr||''}" onchange="setInfo('${s}','sobr',num(this.value))"></label>
+      <label class="f">Porciones que salieron<input type="number" min="0" style="width:90px" value="${info.sal||''}" onchange="setInfo('${s}','sal',num(this.value))"></label>
+      <label class="f" style="flex:1;min-width:140px">¿Qué se hizo con el sobrante?<input style="width:100%" value="${esc(info.dest||'')}" onchange="setInfo('${s}','dest',this.value)"></label></div>
       ${serv?`<div class="mut" style="margin-bottom:6px">≈ ${Math.round(serv)} porciones servidas según total, sobrante y porción</div>`:''}`;
     if(us.length){
       h+=`<table><tr><th>Insumo usado</th><th class="n">Cantidad</th><th>Unidad</th><th class="n">Costo</th><th></th></tr>`;
@@ -398,6 +495,7 @@ function rDia(){
       <label class="f">Unidad<select id="ua_u_${s}"><option>g</option><option>kg</option><option>ml</option><option>l</option><option>und</option></select></label>
       <button class="b" onclick="addUso('${s}')">Agregar</button></div></div></div>`;
   });
+  h+=rCompras(d);
   h+=`</div><div class="sticky">`;
   const sm=semaforo(c.real!=null?c.fcR:c.fcT);
   h+=`<div class="card"><h3>Resultado del día</h3>
@@ -406,27 +504,50 @@ function rDia(){
     <div class="kv t"><span><b>Costo total del día</b></span><b>${money(c.batchF)}</b></div>`:''}
     ${c.ins>0?`<div class="kv"><span>Costo de insumos por almuerzo (recetas guardadas)</span><b>${money(c.ins)}</b></div>
     <div class="kv t"><span><b>Costo total por almuerzo (teórico)</b></span><b>${money(c.teor)}</b></div>`:''}
-    ${c.real!=null?`<div class="kv t"><span><b>Costo real por almuerzo vendido</b></span><b>${money(c.real)}</b></div>
-    ${c.sobr>0?`<div class="kv"><span class="mut">De ese costo, aprox. lo que quedó de sobrante</span><b>${money(c.sobr)}</b></div>`:''}`:`<div class="warn" style="margin:6px 0">Escribe los <b>almuerzos vendidos</b> (arriba) para ver el costo por almuerzo.</div>`}
+    ${c.real!=null?`<div class="kv t"><span><b>Costo real por almuerzo servido (${c.V})</b></span><b>${money(c.real)}</b></div>
+    ${c.sobr>0?`<div class="kv"><span class="mut">De ese costo, aprox. lo que quedó de sobrante</span><b>${money(c.sobr)}</b></div>`:''}`:`<div class="warn" style="margin:6px 0">Escribe los almuerzos de <b>mesa y domicilio</b> (arriba) para ver el costo por almuerzo.</div>`}
     <div style="height:8px"></div>
     <div class="kv"><span>Precio al público</span><b>${c.pvp?money(c.pvp):'— falta —'}</b></div>
     <div class="kv"><span class="mut">Precio sin INC (${S.cfg.inc}%)</span><b>${c.neto?money(c.neto):'—'}</b></div>
     ${c.val>0?`<div class="kv"><span>Con valera (${c.val} almuerzos) al público</span><b>${money(c.pvpV)}</b></div>
-    <div class="kv"><span class="mut">Precio promedio sin INC (${c.V-c.val} normales + ${c.val} valera)</span><b>${money(c.netoP)}</b></div>`:''}
-    <div class="kv"><span>Food cost teórico</span><b>${c.neto?pct(c.fcT):'—'}</b></div>
-    ${c.real!=null?`<div class="kv"><span>Food cost real</span><b>${c.neto?pct(c.fcR):'—'}</b></div>`:''}
-    <div class="kv t"><span><b>Margen por almuerzo</b></span><b>${(c.neto&&c.hasBase)?money(c.margen)+' ('+pct(c.margenPct)+')':'—'}</b></div>
+    <div class="kv"><span class="mut">Precio promedio sin INC (${c.VT-c.val} normales + ${c.val} valera)</span><b>${money(c.netoP)}</b></div>`:''}
+    ${c.teor>0?`<div class="kv"><span>Food cost teórico</span><b>${c.neto?pct(c.fcT):'—'}</b></div>`:''}
+    ${c.real!=null?`<div class="kv"><span>Food cost del día (costo total ÷ ventas)</span><b>${c.neto?pct(c.fcR):'—'}</b></div>`:''}
+    <div class="kv t"><span><b>Margen por almuerzo vendido</b></span><b>${(c.neto&&c.hasBase)?money(c.margen)+' ('+pct(c.margenPct)+')':'—'}</b></div>
     <div style="margin:10px 0"><span class="pill ${sm.c}">${sm.t}</span> <span class="mut">objetivo food cost ${S.cfg.fcObj}%</span></div>
     ${c.sug?`<div class="kv"><span>Precio sugerido para cumplir el objetivo</span><b>${money(c.sug)}</b></div>`:''}
   </div>`;
-  if(c.V>0)h+=`<div class="card"><h3>Totales del día</h3>
-    <div class="kv"><span>Ventas (sin INC)${c.val>0?` · ${c.V-c.val} normales + ${c.val} con valera`:''}</span><b>${money(c.ventas)}</b></div>
+  if(c.VT>0)h+=`<div class="card"><h3>Totales del día</h3>
+    <div class="kv"><span>Ventas (sin INC)${c.val>0?` · ${c.VT-c.val} normales + ${c.val} con valera`:''}</span><b>${money(c.ventas)}</b></div>
     <div class="kv"><span>Costo total de lo preparado</span><b>${money(c.costoDia)}</b></div>
     <div class="kv t"><span><b>Utilidad bruta</b></span><b>${money(c.utilDia)}</b></div></div>`;
   if(c.warns)h+=`<div class="info">⚠ Hay ${c.warns} dato(s) pendiente(s) en las recetas de este menú (precios sin definir, ingredientes sin cantidad o porciones sin indicar). El costo mostrado está <b>incompleto</b> hasta corregirlos.</div>`;
   h+=`</div></div>`;
   return h;
 }
+
+function rCompras(d){
+  const cs=d.compras||[];let tot=0;cs.forEach(c=>tot+=c.v||0);
+  let h=`<div class="card"><h3>Compras del día y empaques</h3>`;
+  if(cs.length){
+    h+=`<table><tr><th>Producto</th><th class="n">Cantidad</th><th>Unidad</th><th class="n">Valor pagado</th><th class="n">$ por unidad</th><th>Proveedor</th><th>Factura</th><th></th></tr>`;
+    cs.forEach((c,i)=>{h+=`<tr><td><input style="width:130px" value="${esc(c.p)}" onchange="setCompra(${i},'p',this.value)"></td>
+      <td class="n"><input type="number" min="0" step="any" style="width:80px" value="${c.q||''}" onchange="setCompra(${i},'q',num(this.value))"></td>
+      <td><select onchange="setCompra(${i},'u',this.value)">${['g','kg','ml','l','und'].map(u=>`<option ${c.u===u?'selected':''}>${u}</option>`).join('')}</select></td>
+      <td class="n"><input type="number" min="0" style="width:100px" value="${c.v||''}" onchange="setCompra(${i},'v',num(this.value))"></td>
+      <td class="n">${c.q>0&&c.v>0?money(c.v/c.q):'—'}</td>
+      <td><input style="width:100px" value="${esc(c.prov||'')}" onchange="setCompra(${i},'prov',this.value)"></td>
+      <td><select onchange="setCompra(${i},'fac',this.value)"><option ${c.fac==='Sí'?'selected':''}>Sí</option><option ${c.fac!=='Sí'?'selected':''}>No</option></select></td>
+      <td><button class="x" onclick="delCompra(${i})">✕</button></td></tr>`});
+    h+=`<tr><td colspan="3"><b>Total gastado hoy</b></td><td class="n"><b>${money(tot)}</b></td><td colspan="4"></td></tr></table>`;
+  }
+  h+=`<div style="margin-top:8px"><button class="b s" onclick="addCompra()">＋ Agregar compra</button></div>
+  <div class="row" style="margin-top:10px"><label class="f" style="flex:1;min-width:200px">Empaques usados (domicilio)<input style="width:100%" value="${esc(d.emp||'')}" onchange="setDay('emp',this.value)"></label></div></div>`;
+  return h;
+}
+function addCompra(){const d=dayById(curDay);(d.compras=d.compras||[]).push({p:'',q:0,u:'kg',v:0,prov:'',fac:'Sí'});save();render()}
+function setCompra(i,f,v){const d=dayById(curDay);d.compras[i][f]=v;save();render()}
+function delCompra(i){const d=dayById(curDay);d.compras.splice(i,1);save();render()}
 function newDay(){
   let d=S.dias.find(x=>x.fecha===today());
   if(!d){d={id:uid(),fecha:today(),prep:0,vend:0,valera:0,pvp:0,nota:'',sel:{entrada:[],proteina:[],acomp:[],ensalada:[]},uso:{},info:{}};S.dias.push(d);touchDay(d)}
@@ -436,7 +557,7 @@ function selDay(id){curDay=id||null;render()}
 function delDay(){if(!confirm('¿Eliminar este día del historial?'))return;S.dias=S.dias.filter(d=>d.id!==curDay);curDay=null;save();render()}
 function dupDay(){
   const o=dayById(curDay);const f=prompt('Fecha del nuevo día (AAAA-MM-DD):',today());if(!f||!/^\d{4}-\d{2}-\d{2}$/.test(f))return;
-  const n=JSON.parse(JSON.stringify(o));n.id=uid();n.fecha=f;n.vend=0;n.nota='';delete n.snap;S.dias.push(n);touchDay(n);curDay=n.id;render()
+  const n=JSON.parse(JSON.stringify(o));n.id=uid();n.fecha=f;n.vend=0;n.mesa=n.dom=n.pers=n.cort=n.valera=0;n.compras=[];n.nota='';delete n.seed;delete n.snap;S.dias.push(n);touchDay(n);curDay=n.id;render()
 }
 function setDay(f,v){const d=dayById(curDay);d[f]=v;touchDay(d);render()}
 function addRow(s){const d=dayById(curDay);(d.sel[s]=d.sel[s]||[]).push({c:'',prep:0});save();render()}
@@ -564,8 +685,8 @@ function delIns(id){
 function rHist(){
   const months=[...new Set(S.dias.map(d=>d.fecha.slice(0,7)))].sort().reverse();
   let list=S.dias.filter(d=>d.snap&&(histMonth==='all'||d.fecha.startsWith(histMonth))).sort((a,b)=>b.fecha.localeCompare(a.fecha));
-  const withV=list.filter(d=>d.snap.V>0);
-  const vend=withV.reduce((s,d)=>s+d.snap.V,0),ventas=withV.reduce((s,d)=>s+d.snap.ventas,0),costo=withV.reduce((s,d)=>s+d.snap.costoDia,0);
+  const withV=list.filter(d=>vv(d.snap)>0);
+  const vend=withV.reduce((s,d)=>s+vv(d.snap),0),ventas=withV.reduce((s,d)=>s+d.snap.ventas,0),costo=withV.reduce((s,d)=>s+d.snap.costoDia,0);
   let h=`<div class="card"><div class="row"><label class="f">Mes<select data-ro onchange="histMonth=this.value;render()"><option value="all">Todos</option>${months.map(m=>`<option ${m===histMonth?'selected':''}>${m}</option>`).join('')}</select></label>
     <button class="b s" onclick="recalcAll()">🔄 Recalcular con precios actuales</button><button data-ro class="b s" onclick="exportCSV()">⬇ Exportar CSV (Excel)</button></div>
     <div class="mut" style="margin-top:8px">Cada día guarda el costo del momento en que se registró; si cambias precios después, usa “Recalcular”.</div></div>`;
@@ -575,14 +696,14 @@ function rHist(){
   if(!list.length)return h+`<div class="card empty">Todavía no hay días registrados.</div>`;
   h+=`<div class="card"><table><tr><th>Fecha</th><th>Menú</th><th class="n">Vend.</th><th class="n">Costo real / almuerzo</th><th class="n">Precio sin INC</th><th class="n">Food cost</th><th class="n">Margen / almuerzo</th><th></th></tr>`;
   list.forEach(d=>{const s=d.snap,fc=s.real!=null?s.fcR:s.fcT,sm=semaforo(fc);
-    h+=`<tr style="cursor:pointer" onclick="curDay='${d.id}';go('dia')"><td>${d.fecha}<div class="mut">${esc(weekday(d.fecha))}</div></td><td>${esc(s.menu.join(' · '))}</td><td class="n">${s.V||'—'}</td>
-    <td class="n">${s.real!=null?money(s.real):(s.teor>0?money(s.teor):'<span class="warn">sin ventas</span>')}</td><td class="n">${s.neto?money(s.V>0&&s.netoP?s.netoP:s.neto):'—'}</td><td class="n">${(s.neto&&fc>0)?pct(fc):'—'}</td><td class="n">${(s.neto&&fc>0)?money(s.margen):'—'}</td><td><span class="pill ${sm.c}">${sm.t}</span></td></tr>`});
+    h+=`<tr style="cursor:pointer" onclick="curDay='${d.id}';go('dia')"><td>${d.fecha}<div class="mut">${esc(weekday(d.fecha))}</div></td><td>${esc(s.menu.join(' · '))}</td><td class="n">${vv(s)||'—'}</td>
+    <td class="n">${s.real!=null?money(s.real):(s.teor>0?money(s.teor):'<span class="warn">sin ventas</span>')}</td><td class="n">${s.neto?money(vv(s)>0&&s.netoP?s.netoP:s.neto):'—'}</td><td class="n">${(s.neto&&fc>0)?pct(fc):'—'}</td><td class="n">${(s.neto&&fc>0)?money(s.margen):'—'}</td><td><span class="pill ${sm.c}">${sm.t}</span></td></tr>`});
   return h+`</table></div>`;
 }
 function recalcAll(){S.dias.forEach(touchDay);toast('Historial recalculado con los precios actuales');render()}
 function exportCSV(){
-  const rows=[['Fecha','Menu','Preparados','Vendidos','Con valera','Precio publico','Precio sin INC','Costo insumos por almuerzo','Costo total teorico','Costo real por almuerzo','Food cost','Margen por almuerzo','Ventas sin INC','Costo del dia','Utilidad bruta']];
-  S.dias.filter(d=>d.snap).sort((a,b)=>a.fecha.localeCompare(b.fecha)).forEach(d=>{const s=d.snap;rows.push([d.fecha,s.menu.join(' | '),s.P,s.V,s.val||0,s.pvp,Math.round(s.neto),Math.round(s.ins),Math.round(s.teor),s.real!=null?Math.round(s.real):'',(s.real!=null?s.fcR:s.fcT).toFixed(1),Math.round(s.margen),Math.round(s.ventas),Math.round(s.costoDia),Math.round(s.utilDia)])});
+  const rows=[['Fecha','Menu','Preparados','Vendidos','Servidos','Con valera','Precio publico','Precio sin INC','Costo insumos por almuerzo','Costo total teorico','Costo real por almuerzo','Food cost','Margen por almuerzo','Ventas sin INC','Costo del dia','Utilidad bruta']];
+  S.dias.filter(d=>d.snap).sort((a,b)=>a.fecha.localeCompare(b.fecha)).forEach(d=>{const s=d.snap;rows.push([d.fecha,s.menu.join(' | '),s.P,vv(s),s.V,s.val||0,s.pvp,Math.round(s.neto),Math.round(s.ins),Math.round(s.teor),s.real!=null?Math.round(s.real):'',(s.real!=null?s.fcR:s.fcT).toFixed(1),Math.round(s.margen),Math.round(s.ventas),Math.round(s.costoDia),Math.round(s.utilDia)])});
   const csv='﻿'+rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(';')).join('\r\n');
   dl('Historial_almuerzos_HealthyBite.csv',csv,'text/csv')
 }
@@ -598,7 +719,7 @@ function rCfg(){
     <label class="f">% Desviación / merma<input type="number" step="0.5" value="${c.desv}" onchange="setCfg('desv',num(this.value))"></label>
     <label class="f">% Impuesto al consumo<input type="number" step="0.5" value="${c.inc}" onchange="setCfg('inc',num(this.value))"></label>
     <label class="f">% Food cost objetivo<input type="number" step="0.5" value="${c.fcObj}" onchange="setCfg('fcObj',num(this.value))"></label></div>
-    <p class="mut">Método (igual al libro de costeo de la carta): costo de insumos → + mano de obra → + desviación = costo total. Food cost = costo total ÷ precio sin INC. Semáforo: “En rango” hasta objetivo + 3 puntos, “Revisar” hasta objetivo + 10, “Crítico” por encima. El 21%, el 5% y el 30% vienen del costeo previo: conviene validarlos con el cliente.</p></div>
+    <p class="mut">Método (igual al libro de costeo de la carta): costo de insumos → + mano de obra → + desviación = costo total. Food cost = costo total del día ÷ ventas sin INC (incluye almuerzos del personal y sobrante). Semáforo: “En rango” hasta objetivo + 3 puntos, “Revisar” hasta objetivo + 10, “Crítico” por encima. El 21%, el 5% y el 30% vienen del costeo previo: conviene validarlos con el cliente.</p></div>
   <div class="card"><h3>Respaldo de datos</h3><p class="mut">Los datos se guardan en este navegador. Descarga un respaldo de vez en cuando (o para pasar la información a otro computador).</p>
     <div class="row"><button data-ro class="b" onclick="exportJSON()">⬇ Descargar respaldo</button>
     <label class="b s" style="cursor:pointer">⬆ Restaurar respaldo<input type="file" accept=".json" style="display:none" onchange="importJSON(this)"></label>
